@@ -10,6 +10,8 @@ from setuptools import setup
 
 requirements = {
     "install": [
+        "torch>=1.13.0",
+        "torchaudio>=0.13.0",
         "scipy>=1.4.1",
         "librosa",
         "jamo",  # For kss
@@ -42,6 +44,8 @@ requirements = {
         # "rotary_embedding_torch",
         "requests",
         "modelscope",
+        "python-json-logger>=2.0.7",
+        "websockets>=11.0.0",
     ],
     # train: The modules invoked when training only.
     "train": [
@@ -116,7 +120,7 @@ setup(
     author="Speech Lab of Alibaba Group",
     author_email="funasr@list.alibaba-inc.com",
     description="FunASR: A Fundamental End-to-End Speech Recognition Toolkit",
-    long_description=open(os.path.join(dirname, "README.md"), encoding="utf-8").read(),
+    long_description="CueMate ASR Service - Based on FunASR for real-time speech recognition",
     long_description_content_type="text/markdown",
     license="The MIT License",
     packages=find_packages(include=["funasr*"]),
