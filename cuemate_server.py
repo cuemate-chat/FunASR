@@ -20,16 +20,10 @@ sys.path.append('/workspace')
 
 async def main():
     """主函数"""
-    # 打印启动 banner
-    print_banner('ASR Service', port=10095)
-    
     # 设置日志
     logger = setup_cuemate_logger('cuemate-asr')
 
     try:
-        # 启动 FunASR WebSocket 服务
-        logger.info("ASR 服务初始化中...")
-
         # 导入 FunASR WebSocket 服务器
         sys.path.append('/app/runtime/python/websocket')
         from funasr_wss_server import main as funasr_main
@@ -48,11 +42,17 @@ async def main():
             "--device", "cpu"
         ])
 
-        logger.info("启动 FunASR WebSocket 服务...")
-        logger.info(f"服务地址: ws://0.0.0.0:10095")
+        # 打印启动 banner
+        print_banner('ASR Service', version='0.1.0', port=10095)
 
         # 启动 FunASR 服务
         await funasr_main(args)
+        
+        # 服务启动成功
+        print_success_info('ASR Service', 10095, {
+            'WebSocket地址': 'ws://0.0.0.0:10095',
+            '基于': 'FunASR Official Runtime'
+        })
 
     except Exception as e:
         logger.error(f"服务启动失败: {e}")
