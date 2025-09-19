@@ -4,7 +4,7 @@
 FROM python:3.11-slim
 
 # 设置标签
-LABEL maintainer="CueMate Team"
+LABEL maintainer="CueMate"
 LABEL version="0.1.0"
 LABEL description="CueMate ASR Service - Real-time Transcription (CPU)"
 
@@ -16,12 +16,18 @@ RUN apt-get update && apt-get install -y \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
+# 设置版本环境变量
+ARG VERSION=0.1.0
+ENV VERSION=${VERSION}
+
 # 设置环境变量
 ENV PYTHONPATH=/app:/app/funasr
 ENV FUNASR_CACHE_DIR=/app/models
 ENV CUEMATE_LOG_DIR=/opt/cuemate/logs
 ENV TZ=Asia/Shanghai
 ENV PYTORCH_DISABLE_NET_ACCESS=0
+ENV OMP_NUM_THREADS=1
+ENV LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu
 
 # 创建应用目录和用户
 RUN useradd -m -u 1000 funasr

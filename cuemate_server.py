@@ -13,21 +13,18 @@ from datetime import datetime
 from pathlib import Path
 
 # 导入 CueMate 日志模块
-from cuemate_logger import setup_cuemate_logger
+from cuemate_logger import setup_cuemate_logger, print_banner, print_success_info
 
 # 导入 FunASR 相关模块
 sys.path.append('/workspace')
 
 async def main():
     """主函数"""
+    # 打印启动 banner
+    print_banner('ASR Service', port=10095)
+    
     # 设置日志
     logger = setup_cuemate_logger('cuemate-asr')
-
-    logger.info("========================================")
-    logger.info("CueMate ASR 服务启动")
-    logger.info(f"版本: {os.getenv('VERSION', '0.1.0')}")
-    logger.info("基于: FunASR Official Runtime")
-    logger.info("========================================")
 
     try:
         # 启动 FunASR WebSocket 服务

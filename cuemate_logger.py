@@ -9,6 +9,43 @@ from pathlib import Path
 from datetime import datetime
 from pythonjsonlogger import jsonlogger
 
+def print_banner(service_name: str, version: str = None, port: int = None):
+    """打印启动 banner"""
+    service_version = version or os.getenv('VERSION', '0.1.0')
+    
+    banner = f"""
+╔══════════════════════════════════════════════════════════════╗
+║                                                              ║
+║    ██████╗██╗   ██╗███████╗███╗   ███╗ █████╗ ████████╗███████╗
+║   ██╔════╝██║   ██║██╔════╝████╗ ████║██╔══██╗╚══██╔══╝██╔════╝
+║   ██║     ██║   ██║█████╗  ██╔████╔██║███████║   ██║   █████╗  
+║   ██║     ╚██╗ ██╔╝██╔══╝  ██║╚██╔╝██║██╔══██║   ██║   ██╔══╝  
+║   ╚██████╗ ╚████╔╝ ███████╗██║ ╚═╝ ██║██║  ██║   ██║   ███████╗
+║    ╚═════╝  ╚═══╝  ╚══════╝╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝   ╚══════╝
+║                                                              ║
+║  Service: {service_name:<20} Version: {service_version:<10} ║
+║  Port: {str(port) if port else 'N/A':<20} ║
+║  Environment: {os.getenv('NODE_ENV', 'development'):<15} ║
+║  Started: {datetime.now().isoformat():<20} ║
+║                                                              ║
+╚══════════════════════════════════════════════════════════════╝
+"""
+    print(banner)
+
+def print_success_info(service_name: str, port: int, additional_info: dict = None):
+    """打印成功启动信息"""
+    separator = '========================================='
+    print(f'[SUCCESS] {separator}')
+    print(f'[SUCCESS] 启动完成！')
+    print(f'[SUCCESS] 服务名称: {service_name}')
+    print(f'[SUCCESS] 端口号: {port}')
+    
+    if additional_info:
+        for key, value in additional_info.items():
+            print(f'[SUCCESS] {key}: {value}')
+    
+    print(f'[SUCCESS] {separator}')
+
 def setup_cuemate_logger(service_name: str, log_level: str = "INFO") -> logging.Logger:
     """
     设置 CueMate 统一日志格式

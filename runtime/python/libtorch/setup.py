@@ -1,16 +1,6 @@
 # -*- encoding: utf-8 -*-
-from pathlib import Path
 import setuptools
 from setuptools import find_packages
-
-
-def get_readme():
-    root_dir = Path(__file__).resolve().parent
-    readme_path = str(root_dir / "README.md")
-    print(readme_path)
-    with open(readme_path, "r", encoding="utf-8") as f:
-        readme = f.read()
-    return readme
 
 
 setuptools.setup(
@@ -22,7 +12,7 @@ setuptools.setup(
     author_email="funasr@list.alibaba-inc.com",
     description="FunASR: A Fundamental End-to-End Speech Recognition Toolkit",
     license="The MIT License",
-    long_description=get_readme(),
+    long_description="FunASR: A Fundamental End-to-End Speech Recognition Toolkit",
     long_description_content_type="text/markdown",
     include_package_data=True,
     install_requires=[
