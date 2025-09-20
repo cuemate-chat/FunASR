@@ -1,5 +1,5 @@
 # CueMate ASR Service
-# 基于 FunASR 源码构建的实时转录服务 (CPU)
+# 基于 FunASR pip 安装的实时转录服务 (CPU)
 
 FROM python:3.11-slim
 
@@ -8,12 +8,10 @@ LABEL maintainer="CueMate"
 LABEL version="0.1.0"
 LABEL description="CueMate ASR Service - Real-time Transcription (CPU)"
 
-# 安装必要的系统依赖 (包含PyTorch需要的库)
+# 安装必要的系统依赖
 RUN apt-get update && apt-get install -y \
     libsndfile1 \
     libgomp1 \
-    gcc \
-    g++ \
     && rm -rf /var/lib/apt/lists/*
 
 # 设置版本环境变量
@@ -21,13 +19,10 @@ ARG VERSION=0.1.0
 ENV VERSION=${VERSION}
 
 # 设置环境变量
-ENV PYTHONPATH=/app:/app/funasr
-ENV FUNASR_CACHE_DIR=/app/models
+ENV MODELSCOPE_CACHE=/app/models
 ENV CUEMATE_LOG_DIR=/opt/cuemate/logs
 ENV TZ=Asia/Shanghai
-ENV PYTORCH_DISABLE_NET_ACCESS=0
 ENV OMP_NUM_THREADS=1
-ENV LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu
 
 # 创建应用目录和用户
 RUN useradd -m -u 1000 funasr
@@ -38,19 +33,18 @@ RUN mkdir -p /app /app/models /opt/cuemate/logs && \
 USER funasr
 WORKDIR /app
 
-# 复制项目文件 (精简版)
-COPY --chown=funasr:funasr funasr/ /app/funasr/
-COPY --chown=funasr:funasr fun_text_processing/ /app/fun_text_processing/
-COPY --chown=funasr:funasr runtime/ /app/runtime/
-COPY --chown=funasr:funasr setup.py /app/
-COPY --chown=funasr:funasr cuemate_server.py /app/
-COPY --chown=funasr:funasr cuemate_logger.py /app/
-
-# 安装FunASR (使用setup.py，包含所有依赖)
-RUN pip install --no-cache-dir --user -e .
+# 复制 FunASR WebSocket 服务器
+COPY --chown=funasr:funasr runtime/python/websocket/funasr_wss_server.py /app/
 
 # 暴露端口
 EXPOSE 10095
 
-# 启动命令
-CMD ["python", "cuemate_server.py"]
+# 启动命令 - 使用复制的 WebSocket 服务器
+CMD ["python", "funasr_wss_server.py", \
+     "--host", "0.0.0.0", \
+     "--port", "10095", \
+     "--asr_model", "iic/speech_paraformer-large_asr_nat-zh-cn-16k-common-vocab8404-pytorch", \
+     "--vad_model", "iic/speech_fsmn_vad_zh-cn-16k-common-pytorch", \
+     "--punc_model", "iic/punc_ct-transformer_zh-cn-common-vad_realtime-vocab272727", \
+     "--device", "cpu", \
+     "--certfile", ""]

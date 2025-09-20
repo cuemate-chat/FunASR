@@ -1,104 +1,57 @@
 #!/bin/bash
 
 # FunASR Docker 构建脚本
-# 基于 FunASR 源码，为 CueMate 项目定制实时转录服务 (CPU)
+# 本地安装 funasr，然后挂载到容器
 
 set -e
 
-# 配置变量
 PROJECT_NAME="cuemate-asr"
 VERSION=${VERSION:-"0.1.0"}
 IMAGE_NAME="${PROJECT_NAME}:${VERSION}"
-BASE_IMAGE="python:3.11-slim"
+FUNASR_DIR="./funasr_local"
 
-# 颜色输出
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+echo "========================================="
+echo "构建 FunASR Docker 镜像"
+echo "项目: ${PROJECT_NAME}"
+echo "版本: ${VERSION}"
+echo "========================================="
 
-echo_info() {
-    echo -e "${BLUE}[INFO]${NC} $1"
-}
+# 检查并安装 FunASR Python 包
+FUNASR_PACKAGES_DIR="/opt/cuemate/funasr-packages"
+if [ ! -d "${FUNASR_PACKAGES_DIR}" ] || [ ! -d "${FUNASR_PACKAGES_DIR}/funasr" ]; then
+    echo "FunASR 包不存在，开始安装..."
+    mkdir -p "${FUNASR_PACKAGES_DIR}"
 
-echo_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
-}
-
-echo_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
-}
-
-echo_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
-
-# 拉取基础镜像
-pull_base_image() {
-    echo_info "拉取基础镜像: ${BASE_IMAGE}"
-
-    if ! docker pull "${BASE_IMAGE}"; then
-        echo_error "拉取基础镜像失败"
-        exit 1
-    fi
-
-    echo_success "基础镜像拉取完成"
-}
-
-
-# 清理旧镜像
-cleanup_old_images() {
-    echo_info "清理旧的镜像..."
-
-    # 删除同名镜像
-    if docker images | grep -q "${PROJECT_NAME}"; then
-        echo_warning "发现旧版本镜像，正在清理..."
-        docker rmi "${IMAGE_NAME}" 2>/dev/null || true
-        # 清理 <none> 标签的镜像
-        docker image prune -f
-    fi
-
-    echo_success "镜像清理完成"
-}
+    # 使用临时容器安装 Python 包
+    docker run --rm \
+        -v "${FUNASR_PACKAGES_DIR}:/home/funasr/.local/lib/python3.11/site-packages" \
+        python:3.11-slim \
+        bash -c "
+            useradd -m -u 1000 funasr && \
+            apt-get update && apt-get install -y libsndfile1 libgomp1 && \
+            chown -R funasr:funasr /home/funasr && \
+            su - funasr -c '
+                pip install --user torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu && \
+                pip install --user funasr modelscope huggingface_hub \"websockets<12.0\"
+            '
+        "
+    echo "FunASR 包安装完成"
+else
+    echo "FunASR 包已存在，跳过安装"
+fi
 
 # 构建镜像
-build_image() {
-    echo_info "开始构建 Docker 镜像: ${IMAGE_NAME}"
+echo "开始构建 Docker 镜像..."
+docker build -t "${IMAGE_NAME}" . --build-arg VERSION="${VERSION}"
 
-    # 构建镜像
-    docker build -t "${IMAGE_NAME}" . \
-        --build-arg VERSION="${VERSION}" \
-        --no-cache
-
-    if [ $? -eq 0 ]; then
-        echo_success "镜像构建成功: ${IMAGE_NAME}"
-    else
-        echo_error "镜像构建失败"
-        exit 1
-    fi
-}
-
-# 主函数
-main() {
-    echo_info "========================================="
-    echo_info "CueMate ASR Docker 镜像构建工具"
-    echo_info "基于: ${BASE_IMAGE}"
-    echo_info "项目: ${PROJECT_NAME}"
-    echo_info "版本: ${VERSION}"
-    echo_info "========================================="
-
-    # 执行构建流程
-    pull_base_image
-    cleanup_old_images
-    build_image
-
-    echo_success "========================================="
-    echo_success "构建完成！"
-    echo_success "镜像名称: ${IMAGE_NAME}"
-    echo_success "WebSocket地址: ws://localhost:10095"
-    echo_success "========================================="
-}
-
-# 执行主函数
-main "$@"
+if [ $? -eq 0 ]; then
+    echo "========================================="
+    echo "构建完成！"
+    echo "镜像名称: ${IMAGE_NAME}"
+    echo "启动命令: docker run -p 10095:10095 ${IMAGE_NAME}"
+    echo "WebSocket地址: ws://localhost:10095"
+    echo "========================================="
+else
+    echo "构建失败！"
+    exit 1
+fi
